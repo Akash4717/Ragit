@@ -72,9 +72,9 @@ function App() {
 
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-slate-800">Embed & API</h2>
+        <h2 className="text-xl font-bold text-white">Embed & API</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Integrate <span className="font-medium text-slate-700">{productName}</span> chatbot
+          Integrate <span className="font-medium text-green-500">{productName}</span> chatbot
           into any internal tool in minutes
         </p>
       </div>
@@ -92,7 +92,7 @@ function App() {
                 navigator.clipboard.writeText(productId);
                 toast.success("Product ID copied!");
               }}
-              className="mt-3 text-xs text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+              className="mt-3 text-xs text-primary-foreground/80 hover:text-green-500 transition-colors"
             >
               Click to copy →
             </button>
@@ -110,7 +110,7 @@ function App() {
             <div className="flex gap-3 mt-3">
               <button
                 onClick={() => setShowKey(!showKey)}
-                className="text-xs text-slate-400 hover:text-white transition-colors"
+                className="text-xs text-slate-400 hover:text-green-500 transition-colors"
               >
                 {showKey ? "Hide" : "Reveal"} →
               </button>
@@ -119,7 +119,7 @@ function App() {
                   navigator.clipboard.writeText(apiKey);
                   toast.success("API Key copied!");
                 }}
-                className="text-xs text-slate-400 hover:text-white transition-colors"
+                className="text-xs text-slate-400 hover:text-green-500 transition-colors"
               >
                 Copy →
               </button>
@@ -145,10 +145,10 @@ function App() {
         {/* Step 1 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-slate-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
               1
             </div>
-            <h3 className="font-semibold text-slate-800">Install the package</h3>
+            <h3 className="font-semibold text-green-500">Install the package</h3>
           </div>
           <CodeBlock code={installCode} language="bash" />
         </div>
@@ -156,10 +156,10 @@ function App() {
         {/* Step 2 */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+              <div className="w-7 h-7 rounded-full bg-slate-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
               2
             </div>
-            <h3 className="font-semibold text-slate-800">Add to your React app</h3>
+            <h3 className="font-semibold text-green-500">Add to your React app</h3>
           </div>
           <CodeBlock code={usageCode} language="jsx" />
         </div>
@@ -171,7 +171,7 @@ function App() {
               OR
             </div>
             <div>
-              <h3 className="font-semibold text-slate-800">Use the script tag</h3>
+              <h3 className="font-semibold text-green-500">Use the script tag</h3>
               <p className="text-xs text-muted-foreground">For non-React projects</p>
             </div>
           </div>
@@ -180,7 +180,7 @@ function App() {
       </div>
 
       {/* How it works */}
-      <Card className="bg-slate-50 border-slate-200">
+      <Card className="bg-slate-900 border-slate-200">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">How it works for freshers</CardTitle>
           <CardDescription>

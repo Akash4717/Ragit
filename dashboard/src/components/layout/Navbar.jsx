@@ -27,7 +27,7 @@ const Navbar = () => {
           variant="outline" 
           size="sm" 
           onClick={logout}
-          className="hover-lift border-primary/30 hover:border-primary hover:bg-primary hover:text-black"
+          className="hover-lift border-primary/30 hover:border-primary hover:bg-primary hover:text-green-500"
         >
           Logout
         </Button>

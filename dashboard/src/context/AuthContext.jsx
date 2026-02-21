@@ -9,17 +9,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if session exists on app load
-    const stored = localStorage.getItem("ragit_session");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setSession(parsed);
-      setUser(parsed.user);
-    }
-    setLoading(false);
+    // ✅ Step 1: Get existing session from Supabase directly
+    // This works even after page refresh
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        localStorage.setItem("ragit_session", JSON.stringify(session));
+      } else {
+        setSession(null);
+        setUser(null);
+        localStorage.removeItem("ragit_session");
+      }
+      setLoading(false);
+    });
 
-    // Listen for auth state changes from Supabase
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    // ✅ Step 2: Listen for auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session) {
           setSession(session);
@@ -30,10 +36,11 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
           localStorage.removeItem("ragit_session");
         }
+        setLoading(false);
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = (sessionData) => {
@@ -57,12 +64,9 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook for easy access
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used inside AuthProvider");
   return context;
 };
 

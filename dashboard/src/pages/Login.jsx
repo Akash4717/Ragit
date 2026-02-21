@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../lib/api";
+import supabaseClient from "../lib/supabase";
 import AnimatedBackground from "../components/AnimatedBackground";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -31,6 +32,7 @@ const Login = () => {
 
     try {
       if (isSignup) {
+        // Signup still goes through backend
         await api.post("/auth/signup", {
           email: form.email,
           password: form.password,
@@ -39,16 +41,22 @@ const Login = () => {
         toast.success("Account created! Please login.");
         setIsSignup(false);
       } else {
-        const { data } = await api.post("/auth/login", {
+        // ✅ Login directly via Supabase client
+        // This makes Supabase save session to localStorage automatically
+        // so it persists on page refresh
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
           email: form.email,
           password: form.password,
         });
+
+        if (error) throw new Error(error.message);
+
         login(data.session);
         toast.success("Welcome back!");
         navigate("/dashboard");
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || "Something went wrong");
+      toast.error(error.response?.data?.error || error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -56,10 +64,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
       <AnimatedBackground variant="particles" />
       
-      {/* Floating green orbs */}
       <div className="fixed top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float pointer-events-none"></div>
       <div className="fixed bottom-20 right-10 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float pointer-events-none" style={{ animationDelay: '2s' }}></div>
       <div className="fixed top-1/2 left-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float pointer-events-none" style={{ animationDelay: '4s' }}></div>
@@ -148,9 +154,9 @@ const Login = () => {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full hover-lift hover-glow mt-6" 
+            <Button
+              type="submit"
+              className="w-full hover-lift hover-glow mt-6"
               disabled={loading}
               size="lg"
             >

@@ -1,307 +1,462 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 import { toast } from "sonner";
 import { SUPPORTED_LOCALES } from "../../lib/constants";
 
-const MessageBubble = ({ message }) => {
+const LOCALE_TO_SPEECH_LANG = {
+  en: "en-US", hi: "hi-IN", es: "es-ES", fr: "fr-FR",
+  de: "de-DE", zh: "zh-CN", ja: "ja-JP", ar: "ar-SA",
+  pt: "pt-BR", ru: "ru-RU",
+};
+
+const useSpeech = () => {
+  const [speakingIndex, setSpeakingIndex] = useState(null);
+
+  const speak = (text, locale, index) => {
+    if (!window.speechSynthesis) {
+      toast.error("Browser doesn't support text-to-speech");
+      return;
+    }
+    if (speakingIndex === index) {
+      window.speechSynthesis.cancel();
+      setSpeakingIndex(null);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = LOCALE_TO_SPEECH_LANG[locale] || "en-US";
+    utterance.rate = 0.95;
+    utterance.onstart = () => setSpeakingIndex(index);
+    utterance.onend = () => setSpeakingIndex(null);
+    utterance.onerror = () => setSpeakingIndex(null);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const stop = () => {
+    window.speechSynthesis?.cancel();
+    setSpeakingIndex(null);
+  };
+
+  return { speak, stop, speakingIndex };
+};
+
+const SoundwaveIcon = () => (
+  <span style={{ display: "flex", gap: "2px", alignItems: "center", height: "12px" }}>
+    {[0, 1, 2, 1, 0].map((h, i) => (
+      <span key={i} style={{
+        width: "2px",
+        height: `${4 + h * 3}px`,
+        background: "#1DB954",
+        borderRadius: "2px",
+        animation: "soundwave 0.8s ease infinite",
+        animationDelay: `${i * 0.1}s`,
+      }} />
+    ))}
+  </span>
+);
+
+const MessageBubble = ({ message, index, onSpeak, speakingIndex }) => {
   const isBot = message.role === "bot";
+  const isSpeaking = speakingIndex === index;
 
   return (
-    <div className={`flex gap-3 ${isBot ? "justify-start" : "justify-end"}`}>
-      {isBot && (
-        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-primary-foreground text-xs font-bold mt-1">
-          AI
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: isBot ? "flex-start" : "flex-end",
+      gap: "4px",
+    }}>
+      {/* Label */}
+      <span style={{
+        fontSize: "10px",
+        color: "#555",
+        fontFamily: "'Space Mono', monospace",
+        paddingLeft: isBot ? "4px" : "0",
+        paddingRight: isBot ? "0" : "4px",
+      }}>
+        {isBot ? "ragit_ai" : "you"}
+      </span>
+
+      <div style={{
+        display: "flex",
+        alignItems: "flex-end",
+        gap: "8px",
+        flexDirection: isBot ? "row" : "row-reverse",
+      }}>
+        {/* Bubble */}
+        <div style={{
+          maxWidth: "72%",
+          padding: "12px 16px",
+          borderRadius: isBot ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
+          background: isBot
+            ? "linear-gradient(135deg, #161616, #1a1a1a)"
+            : "linear-gradient(135deg, #1DB954, #17a348)",
+          border: isBot ? "1px solid #2a2a2a" : "none",
+          color: isBot ? "#EBEBEB" : "#0a0a0a",
+          fontSize: "13px",
+          lineHeight: "1.65",
+          fontFamily: isBot ? "'Space Mono', monospace" : "'Syne', sans-serif",
+          fontWeight: isBot ? "400" : "600",
+          boxShadow: isBot
+            ? "0 2px 12px rgba(0,0,0,0.3)"
+            : "0 2px 16px rgba(29,185,84,0.25)",
+        }}>
+          {message.content}
         </div>
-      )}
-      <div
-        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isBot
-            ? "bg-slate-700 border border-slate-600 text-foreground shadow-sm rounded-tl-sm"
-            : "bg-primary text-primary-foreground rounded-tr-sm"
-        }`}
-      >
-        {message.content}
+
+        {/* Speak button */}
+        {isBot && (
+          <button
+            onClick={() => onSpeak(message.content, index)}
+            title={isSpeaking ? "Stop" : "Listen"}
+            style={{
+              width: "28px", height: "28px",
+              borderRadius: "50%",
+              background: isSpeaking ? "rgba(29,185,84,0.15)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${isSpeaking ? "#1DB954" : "#2a2a2a"}`,
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+              transition: "all 0.2s",
+              marginBottom: "2px",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#1DB954";
+              e.currentTarget.style.background = "rgba(29,185,84,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isSpeaking) {
+                e.currentTarget.style.borderColor = "#2a2a2a";
+                e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+              }
+            }}
+          >
+            {isSpeaking
+              ? <SoundwaveIcon />
+              : <span style={{ fontSize: "12px" }}>🔊</span>
+            }
+          </button>
+        )}
       </div>
-      {!isBot && (
-        <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center shrink-0 text-muted-foreground text-xs font-bold mt-1">
-          You
-        </div>
-      )}
     </div>
   );
 };
 
 const TypingIndicator = () => (
-  <div className="flex gap-3 justify-start">
-    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 text-primary-foreground text-xs font-bold">
-      AI
-    </div>
-    <div className="bg-slate-700 border border-slate-600 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
-      <div className="flex gap-1 items-center h-4">
-        <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-        <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-        <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
+    <span style={{ fontSize: "10px", color: "#555", fontFamily: "'Space Mono', monospace", paddingLeft: "4px" }}>
+      ragit_ai
+    </span>
+    <div style={{
+      padding: "12px 16px",
+      borderRadius: "4px 16px 16px 16px",
+      background: "linear-gradient(135deg, #161616, #1a1a1a)",
+      border: "1px solid #2a2a2a",
+    }}>
+      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={{
+            width: "6px", height: "6px", borderRadius: "50%",
+            background: "#1DB954",
+            animation: "bounce 1.2s ease infinite",
+            animationDelay: `${i * 0.2}s`,
+          }} />
+        ))}
       </div>
     </div>
   </div>
 );
 
 const ChatPreview = ({ productId, productName }) => {
-  const [messages, setMessages] = useState([
-    {
-      role: "bot",
-      content: `Hi! I'm the ${productName} assistant. Ask me anything about the product — I'll answer based on the KT materials uploaded.`,
-    },
-  ]);
+  const [messages, setMessages] = useState([{
+    role: "bot",
+    content: `Hi! I'm the ${productName} assistant. Ask me anything — I'll answer from your KT materials.`,
+  }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState("en");
   const [translating, setTranslating] = useState(false);
-  const [totalChunksUsed, setTotalChunksUsed] = useState(0);
+  const [totalChunks, setTotalChunks] = useState(0);
   const bottomRef = useRef(null);
+  const { speak, stop, speakingIndex } = useSpeech();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => () => window.speechSynthesis?.cancel(), []);
+
   const sendMessage = async () => {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
-
+    stop();
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInput("");
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/chat/test`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${
-              JSON.parse(localStorage.getItem("ragit_session"))?.access_token
-            }`,
-          },
-          body: JSON.stringify({
-            productId,
-            message: trimmed,
-            // Pass selected locale so backend translates response to this language
-            targetLocale: selectedLocale,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Failed to get response");
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", content: data.answer },
-      ]);
-
-      setTotalChunksUsed((prev) => prev + (data.chunksUsed || 0));
-    } catch (error) {
-      toast.error("Failed to get response. Is your backend running?");
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", content: "Sorry, I encountered an error. Please try again." },
-      ]);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/chat/test`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${JSON.parse(localStorage.getItem("ragit_session"))?.access_token}`,
+        },
+        body: JSON.stringify({ productId, message: trimmed, targetLocale: selectedLocale }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+      setMessages((prev) => [...prev, { role: "bot", content: data.answer }]);
+      setTotalChunks((prev) => prev + (data.chunksUsed || 0));
+    } catch {
+      toast.error("Failed to get response.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Translate all existing messages when language is changed
   const handleLocaleChange = async (newLocale) => {
     if (newLocale === selectedLocale) return;
-
+    stop();
     setTranslating(true);
-    const prevLocale = selectedLocale;
+    const prev = selectedLocale;
     setSelectedLocale(newLocale);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/chat/translate-messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${
-              JSON.parse(localStorage.getItem("ragit_session"))?.access_token
-            }`,
-          },
-          body: JSON.stringify({
-            messages: messages.map((m) => m.content),
-            targetLocale: newLocale,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok && data.translatedMessages) {
-        setMessages((prev) =>
-          prev.map((msg, i) => ({
-            ...msg,
-            content: data.translatedMessages[i] || msg.content,
-          }))
-        );
-        toast.success(`Chat translated to ${SUPPORTED_LOCALES.find(l => l.code === newLocale)?.label}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/chat/translate-messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${JSON.parse(localStorage.getItem("ragit_session"))?.access_token}`,
+        },
+        body: JSON.stringify({ messages: messages.map((m) => m.content), targetLocale: newLocale }),
+      });
+      const data = await res.json();
+      if (res.ok && data.translatedMessages) {
+        setMessages((msgs) => msgs.map((msg, i) => ({ ...msg, content: data.translatedMessages[i] || msg.content })));
+        toast.success(`Translated to ${SUPPORTED_LOCALES.find(l => l.code === newLocale)?.label}`);
       }
-    } catch (error) {
-      console.error("Translation failed:", error);
-      setSelectedLocale(prevLocale); // revert on failure
-      toast.error("Translation failed. Please try again.");
+    } catch {
+      setSelectedLocale(prev);
+      toast.error("Translation failed.");
     } finally {
       setTranslating(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const clearChat = () => {
-    setMessages([
-      {
-        role: "bot",
-        content: `Hi! I'm the ${productName} assistant. Ask me anything about the product.`,
-      },
-    ]);
-    setTotalChunksUsed(0);
-  };
-
-  const currentLocaleLabel = SUPPORTED_LOCALES.find(
-    (l) => l.code === selectedLocale
-  )?.label || "English";
-
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Test Your Chatbot</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Ask questions as a fresher would — powered by your uploaded KT materials
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {totalChunksUsed > 0 && (
-            <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-              🔍 {totalChunksUsed} chunks used
-            </Badge>
-          )}
-          <Button variant="outline" size="sm" onClick={clearChat} className="border-border hover:border-primary hover:text-primary">
-            Clear Chat
-          </Button>
-        </div>
-      </div>
+    <>
+      <style>{`
+        @keyframes soundwave {
+          0%, 100% { transform: scaleY(0.6); opacity: 0.7; }
+          50%       { transform: scaleY(1.4); opacity: 1; }
+        }
+        .chat-input:focus { border-color: #1DB954 !important; box-shadow: 0 0 0 3px rgba(29,185,84,0.1); }
+        .send-btn:hover:not(:disabled) { background: #22d95f !important; transform: translateY(-1px); }
+        .send-btn:active:not(:disabled) { transform: translateY(0); }
+      `}</style>
 
-      {/* Chat Window */}
-      <div className="border border-border rounded-2xl overflow-hidden shadow-lg bg-background max-w-2xl">
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "680px", margin: "0 auto", width: "100%" }}>
 
-        {/* Chat Header with Language Dropdown */}
-        <div className="bg-background border-b border-border px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-              AI
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <div>
+            <h2 style={{
+              fontSize: "20px", fontWeight: "800",
+              color: "#EBEBEB", fontFamily: "'Syne', sans-serif",
+              letterSpacing: "-0.3px",
+            }}>
+              Test Chatbot
+            </h2>
+            <p style={{ fontSize: "12px", color: "#555", marginTop: "3px", fontFamily: "'Space Mono', monospace" }}>
+              RAG · Groq · Lingo.dev · Web Speech
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {totalChunks > 0 && (
+              <span style={{
+                fontSize: "11px", color: "#1DB954",
+                border: "1px solid rgba(29,185,84,0.25)",
+                borderRadius: "20px", padding: "3px 10px",
+                fontFamily: "'Space Mono', monospace",
+                background: "rgba(29,185,84,0.05)",
+              }}>
+                ⚡ {totalChunks} chunks
+              </span>
+            )}
+            <button
+              onClick={() => { stop(); setMessages([{ role: "bot", content: `Hi! I'm the ${productName} assistant.` }]); setTotalChunks(0); }}
+              style={{
+                background: "transparent", border: "1px solid #2a2a2a",
+                color: "#555", padding: "5px 12px", borderRadius: "6px",
+                fontSize: "11px", fontFamily: "'Space Mono', monospace",
+                cursor: "pointer", transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#AAAAAA"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}
+            >
+              clear_
+            </button>
+          </div>
+        </div>
+
+        {/* Chat Window */}
+        <div style={{
+  borderRadius: "16px", overflow: "hidden",
+  border: "1px solid #222",
+  background: "#111",
+  boxShadow: "0 8px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(29,185,84,0.05)",
+  maxWidth: "640px",
+  width: "100%",
+  margin: "0 auto",
+}}>
+
+          {/* Top bar */}
+          <div style={{
+            padding: "14px 18px",
+            borderBottom: "1px solid #1e1e1e",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "#0d0d0d",
+          }}>
+            {/* Bot info */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{
+                width: "34px", height: "34px", borderRadius: "10px",
+                background: "linear-gradient(135deg, #1DB954, #17a348)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#0a0a0a", fontSize: "12px", fontWeight: "800",
+                fontFamily: "'Space Mono', monospace",
+                boxShadow: "0 0 16px rgba(29,185,84,0.35)",
+              }}>AI</div>
+              <div>
+                <p style={{ fontSize: "13px", fontWeight: "700", color: "#EBEBEB", fontFamily: "'Syne', sans-serif" }}>
+                  {productName}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "1px" }}>
+                  <div style={{
+                    width: "5px", height: "5px", borderRadius: "50%",
+                    background: "#1DB954",
+                    boxShadow: "0 0 6px #1DB954",
+                  }} />
+                  <span style={{ fontSize: "10px", color: "#555", fontFamily: "'Space Mono', monospace" }}>
+                    online
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{productName} Assistant</p>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-                <p className="text-xs text-muted-foreground">Online · Powered by Lingo.dev</p>
+
+            {/* Language selector */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {translating && (
+                <span style={{ fontSize: "10px", color: "#1DB954", fontFamily: "'Space Mono', monospace" }}>
+                  translating...
+                </span>
+              )}
+              <div style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                background: "#161616", border: "1px solid #2a2a2a",
+                borderRadius: "8px", padding: "5px 10px",
+              }}>
+                <span style={{ fontSize: "12px" }}>🌐</span>
+                <select
+                  value={selectedLocale}
+                  onChange={(e) => handleLocaleChange(e.target.value)}
+                  disabled={translating || loading}
+                  style={{
+                    background: "transparent", border: "none", outline: "none",
+                    color: "#EBEBEB", fontSize: "11px", cursor: "pointer",
+                    fontFamily: "'Space Mono', monospace",
+                  }}
+                >
+                  {SUPPORTED_LOCALES.map((l) => (
+                    <option key={l.code} value={l.code} style={{ background: "#161616" }}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Language Selector */}
-          <div className="flex items-center gap-2">
-            {translating && (
-              <span className="text-xs text-muted-foreground animate-pulse">
-                Translating...
-              </span>
-            )}
-            <div className="flex items-center gap-1.5 bg-primary/10 border border-primary rounded-lg px-2 py-1 hover:bg-primary/20 transition-colors relative">
-              <span className="text-sm">🌐</span>
-              <select
-                value={selectedLocale}
-                onChange={(e) => handleLocaleChange(e.target.value)}
-                disabled={translating || loading}
-                className="text-xs bg-transparent border-none outline-none cursor-pointer text-primary font-medium disabled:text-muted-foreground appearance-none pr-5"
-                style={{
-                  color: "var(--primary)",
-                  backgroundColor: "transparent",
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231DB954' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right center",
-                  backgroundSize: "12px",
-                  paddingRight: "18px",
-                }}
-              >
-                {SUPPORTED_LOCALES.map((locale) => (
-                  <option key={locale.code} value={locale.code} style={{ backgroundColor: "var(--card)", color: "var(--foreground)" }}>
-                    {locale.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {/* Messages */}
+          <div style={{
+            height: "420px", overflowY: "auto",
+            padding: "20px 18px",
+            display: "flex", flexDirection: "column", gap: "18px",
+            background: "#111",
+          }}>
+            {messages.map((msg, i) => (
+              <MessageBubble
+                key={i} message={msg} index={i}
+                onSpeak={(text, idx) => speak(text, selectedLocale, idx)}
+                speakingIndex={speakingIndex}
+              />
+            ))}
+            {loading && <TypingIndicator />}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input */}
+          <div style={{
+            padding: "14px 18px",
+            borderTop: "1px solid #1e1e1e",
+            display: "flex", gap: "8px",
+            background: "#0d0d0d",
+          }}>
+            <input
+              className="chat-input"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              placeholder={`Message in ${SUPPORTED_LOCALES.find(l => l.code === selectedLocale)?.label || "English"}...`}
+              disabled={loading || translating}
+              style={{
+                flex: 1, background: "#161616",
+                border: "1px solid #2a2a2a", borderRadius: "10px",
+                padding: "11px 16px", color: "#EBEBEB",
+                fontSize: "13px", outline: "none",
+                fontFamily: "'Space Mono', monospace",
+                transition: "all 0.2s",
+              }}
+            />
+            <button
+              className="send-btn"
+              onClick={sendMessage}
+              disabled={loading || !input.trim() || translating}
+              style={{
+                background: input.trim() && !loading && !translating ? "#1DB954" : "#1a1a1a",
+                border: "none", borderRadius: "10px",
+                padding: "11px 22px",
+                color: input.trim() && !loading && !translating ? "#0a0a0a" : "#444",
+                fontSize: "12px", fontWeight: "800",
+                fontFamily: "'Space Mono', monospace",
+                cursor: input.trim() && !loading && !translating ? "pointer" : "not-allowed",
+                transition: "all 0.2s",
+                flexShrink: 0,
+              }}
+            >
+              {loading ? "···" : "send →"}
+            </button>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="h-96 overflow-y-auto px-4 py-4 space-y-3 bg-background">
-          {messages.map((msg, i) => (
-            <MessageBubble key={i} message={msg} />
+        {/* Info pills */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {[
+            "🔊 Click speak on any message to hear it",
+            "🌐 Switch language to translate chat",
+            "📚 Answers from KT materials only",
+          ].map((tip, i) => (
+            <span key={i} style={{
+              fontSize: "11px", color: "#555",
+              border: "1px solid #1e1e1e",
+              borderRadius: "20px", padding: "4px 12px",
+              fontFamily: "'Space Mono', monospace",
+              background: "#0d0d0d",
+            }}>{tip}</span>
           ))}
-          {loading && <TypingIndicator />}
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="bg-background border-t border-border px-4 py-3 flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={`Ask in ${currentLocaleLabel} or any language...`}
-            disabled={loading || translating}
-            className="flex-1 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary transition-all"
-          />
-          <Button
-            onClick={sendMessage}
-            disabled={loading || !input.trim() || translating}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-5"
-          >
-            {loading ? "..." : "Send"}
-          </Button>
         </div>
       </div>
-
-      {/* Tips */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {[
-          { icon: "🌐", tip: "Switch language from the dropdown to translate the entire chat instantly" },
-          { icon: "📚", tip: "Questions are answered from your KT materials only" },
-          { icon: "🔍", tip: "More KT uploads = better and more accurate answers" },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="bg-card border border-border rounded-xl px-4 py-3 flex gap-3 items-start"
-          >
-            <span className="text-lg">{item.icon}</span>
-            <p className="text-xs text-muted-foreground leading-relaxed">{item.tip}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    </>
   );
 };
 
