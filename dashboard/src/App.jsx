@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CreateProduct from "./pages/CreateProduct";
@@ -8,6 +9,9 @@ import ProductDetail from "./pages/ProductDetail";
 const App = () => {
   return (
     <Routes>
+      {/* Landing page */}
+      <Route path="/" element={<Landing />} />
+
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
 
@@ -38,7 +42,7 @@ const App = () => {
       />
 
       {/* Default redirect */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

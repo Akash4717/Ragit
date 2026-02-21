@@ -1,3 +1,4 @@
+import { useState } from "react";
 import api from "../../lib/api";
 import { toast } from "sonner";
 
@@ -24,16 +25,146 @@ const STATUS_META = {
   failed:     { color: "#f87171", bg: "rgba(248,113,113,0.08)", dot: "#f87171", label: "failed"     },
 };
 
-const ResourceList = ({ resources, productId, onRefresh }) => {
-  const handleDelete = async (resourceId) => {
-    if (!confirm("Delete this KT resource? This will remove all its chunks.")) return;
+// ── Custom Confirm Modal ──────────────────────────────────────
+const DeleteModal = ({ fileName, onConfirm, onCancel }) => (
+  <div style={{
+    position: "fixed", inset: 0, zIndex: 1000,
+    background: "rgba(0,0,0,0.7)",
+    backdropFilter: "blur(6px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    animation: "fadeInUp 0.2s ease",
+  }}>
+    <div style={{
+      background: "#111",
+      border: "1px solid #2a2a2a",
+      borderRadius: "16px",
+      padding: "32px",
+      width: "100%", maxWidth: "400px",
+      margin: "24px",
+      boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+      animation: "fadeInUp 0.25s ease",
+    }}>
+      {/* Icon */}
+      <div style={{
+        width: "48px", height: "48px", borderRadius: "12px",
+        background: "rgba(248,113,113,0.1)",
+        border: "1px solid rgba(248,113,113,0.25)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "22px", marginBottom: "20px",
+      }}>🗑️</div>
 
+      {/* Title */}
+      <h3 style={{
+        fontSize: "17px", fontWeight: "800",
+        color: "#EBEBEB", fontFamily: "'Syne', sans-serif",
+        marginBottom: "8px",
+      }}>Delete resource?</h3>
+
+      {/* File name */}
+      <p style={{
+        fontSize: "11px", color: "#555",
+        fontFamily: "'Space Mono', monospace",
+        marginBottom: "6px",
+      }}>
+        This will permanently delete:
+      </p>
+      <div style={{
+        background: "#0d0d0d",
+        border: "1px solid #1e1e1e",
+        borderRadius: "8px",
+        padding: "10px 14px",
+        marginBottom: "20px",
+      }}>
+        <span style={{
+          fontSize: "12px", color: "#EBEBEB",
+          fontFamily: "'Space Mono', monospace",
+          wordBreak: "break-all",
+        }}>
+          {fileName}
+        </span>
+      </div>
+
+      {/* Warning */}
+      <div style={{
+        background: "rgba(248,113,113,0.06)",
+        border: "1px solid rgba(248,113,113,0.2)",
+        borderRadius: "8px",
+        padding: "10px 14px",
+        marginBottom: "24px",
+        display: "flex", gap: "8px", alignItems: "flex-start",
+      }}>
+        <span style={{ fontSize: "12px", flexShrink: 0 }}>⚠️</span>
+        <span style={{
+          fontSize: "11px", color: "#f87171",
+          fontFamily: "'Space Mono', monospace",
+          lineHeight: "1.6",
+        }}>
+          All chunks and transcripts from this file will also be deleted. This cannot be undone.
+        </span>
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: "flex", gap: "10px" }}>
+        <button
+          onClick={onCancel}
+          style={{
+            flex: 1, background: "transparent",
+            border: "1px solid #2a2a2a",
+            borderRadius: "8px", padding: "10px",
+            color: "#AAAAAA", fontSize: "12px",
+            fontFamily: "'Space Mono', monospace",
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "#444";
+            e.currentTarget.style.color = "#EBEBEB";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "#2a2a2a";
+            e.currentTarget.style.color = "#AAAAAA";
+          }}
+        >
+          cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          style={{
+            flex: 1, background: "rgba(248,113,113,0.15)",
+            border: "1px solid rgba(248,113,113,0.4)",
+            borderRadius: "8px", padding: "10px",
+            color: "#f87171", fontSize: "12px", fontWeight: "800",
+            fontFamily: "'Space Mono', monospace",
+            cursor: "pointer", transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(248,113,113,0.25)";
+            e.currentTarget.style.borderColor = "#f87171";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(248,113,113,0.15)";
+            e.currentTarget.style.borderColor = "rgba(248,113,113,0.4)";
+          }}
+        >
+          delete →
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const ResourceList = ({ resources, productId, onRefresh }) => {
+  const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
     try {
-      await api.delete(`/upload/${productId}/${resourceId}`);
+      await api.delete(`/upload/${productId}/${confirmDelete.id}`);
       toast.success("Resource deleted");
+      setConfirmDelete(null);
       onRefresh();
     } catch (error) {
       toast.error("Failed to delete resource");
+      setConfirmDelete(null);
     }
   };
 
@@ -71,14 +202,25 @@ const ResourceList = ({ resources, productId, onRefresh }) => {
       <style>{`
         .resource-row:hover { background: rgba(29,185,84,0.03) !important; }
         .delete-btn:hover { border-color: #f87171 !important; color: #f87171 !important; }
-        .processing-dot {
-          animation: pulse-dot 1.5s ease infinite;
-        }
+        .processing-dot { animation: pulse-dot 1.5s ease infinite; }
         @keyframes pulse-dot {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.3; }
         }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
+
+      {/* Custom Delete Modal */}
+      {confirmDelete && (
+        <DeleteModal
+          fileName={confirmDelete.name}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
 
@@ -122,8 +264,7 @@ const ResourceList = ({ resources, productId, onRefresh }) => {
               <span key={i} style={{
                 fontSize: "10px", color: "#444",
                 fontFamily: "'Space Mono', monospace",
-                fontWeight: "700",
-                textTransform: "uppercase",
+                fontWeight: "700", textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 textAlign: i === 3 ? "right" : "left",
               }}>{col}</span>
@@ -164,8 +305,7 @@ const ResourceList = ({ resources, productId, onRefresh }) => {
                     </p>
                     <p style={{
                       fontSize: "10px", color: "#444",
-                      fontFamily: "'Space Mono', monospace",
-                      marginTop: "2px",
+                      fontFamily: "'Space Mono', monospace", marginTop: "2px",
                     }}>
                       {new Date(resource.created_at).toLocaleDateString("en-GB", {
                         day: "2-digit", month: "short", year: "numeric",
@@ -189,19 +329,15 @@ const ResourceList = ({ resources, productId, onRefresh }) => {
                     style={{
                       width: "6px", height: "6px", borderRadius: "50%",
                       background: status.dot,
-                      boxShadow: resource.status === "done"
-                        ? `0 0 6px ${status.dot}`
-                        : "none",
+                      boxShadow: resource.status === "done" ? `0 0 6px ${status.dot}` : "none",
                     }}
                   />
                   <span style={{
-                    fontSize: "10px",
-                    color: status.color,
+                    fontSize: "10px", color: status.color,
                     fontFamily: "'Space Mono', monospace",
                     background: status.bg,
                     border: `1px solid ${status.color}33`,
-                    borderRadius: "4px",
-                    padding: "2px 7px",
+                    borderRadius: "4px", padding: "2px 7px",
                   }}>
                     {status.label}
                   </span>
@@ -211,17 +347,14 @@ const ResourceList = ({ resources, productId, onRefresh }) => {
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button
                     className="delete-btn"
-                    onClick={() => handleDelete(resource.id)}
+                    onClick={() => setConfirmDelete({ id: resource.id, name: resource.file_name })}
                     style={{
                       background: "transparent",
                       border: "1px solid #2a2a2a",
-                      borderRadius: "6px",
-                      padding: "4px 10px",
-                      color: "#555",
-                      fontSize: "10px",
+                      borderRadius: "6px", padding: "4px 10px",
+                      color: "#555", fontSize: "10px",
                       fontFamily: "'Space Mono', monospace",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
+                      cursor: "pointer", transition: "all 0.2s",
                     }}
                   >
                     delete

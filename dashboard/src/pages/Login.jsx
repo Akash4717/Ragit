@@ -66,6 +66,32 @@ const Login = () => {
     <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
       <AnimatedBackground variant="particles" />
       
+      {/* Home button */}
+<div style={{ position: "fixed", top: "20px", left: "24px", zIndex: 50 }}>
+  <button
+    onClick={() => navigate("/")}
+    style={{
+      display: "flex", alignItems: "center", gap: "8px",
+      background: "rgba(29,185,84,0.08)",
+      border: "1px solid rgba(29,185,84,0.25)",
+      borderRadius: "8px", padding: "8px 14px",
+      color: "#1DB954", fontSize: "12px", fontWeight: "700",
+      fontFamily: "'Space Mono', monospace",
+      cursor: "pointer", transition: "all 0.2s",
+      backdropFilter: "blur(8px)",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = "rgba(29,185,84,0.15)";
+      e.currentTarget.style.borderColor = "#1DB954";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = "rgba(29,185,84,0.08)";
+      e.currentTarget.style.borderColor = "rgba(29,185,84,0.25)";
+    }}
+  >
+    ← home
+  </button>
+</div>
       <div className="fixed top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float pointer-events-none"></div>
       <div className="fixed bottom-20 right-10 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-float pointer-events-none" style={{ animationDelay: '2s' }}></div>
       <div className="fixed top-1/2 left-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-float pointer-events-none" style={{ animationDelay: '4s' }}></div>

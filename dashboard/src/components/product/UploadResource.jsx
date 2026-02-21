@@ -93,7 +93,7 @@ const UploadResource = ({ productId, onUploadSuccess }) => {
         .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
       `}</style>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "680px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px", maxWidth: "680px", margin: "0 auto", width: "100%" }}>
 
         {/* Header */}
         <div>
