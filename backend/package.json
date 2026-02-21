@@ -1,0 +1,31 @@
+{
+    "name": "ragit-backend",
+    "version": "1.0.0",
+    "description": "RAGIT Backend - RAG-powered multilingual chatbot API",
+    "main": "server.js",
+    "type": "module",
+    "scripts": {
+      "dev": "tsx watch server.js",
+      "start": "node server.js"
+    },
+    "dependencies": {
+      "@supabase/supabase-js": "^2.39.0",
+      "cors": "^2.8.5",
+      "dotenv": "^16.4.5",
+      "express": "^4.19.2",
+      "groq-sdk": "^0.37.0",
+      "lingo.dev": "^0.116.5",
+      "mammoth": "^1.11.0",
+      "multer": "^2.0.2",
+      "officeparser": "^6.0.4",
+      "pdf-dist": "^1.0.0",
+      "pdf2json": "^4.0.2",
+      "pdfjs-dist": "^5.4.624",
+      "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+      "nodemon": "^1.0.2",
+      "tsx": "^4.21.0"
+    }
+  }
+  
