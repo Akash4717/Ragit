@@ -9,6 +9,11 @@
 ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝   ╚═╝   
 ```
 
+
+
+
+VIDEO LINK-- https://drive.google.com/file/d/1j8uqEBLYdZiyN-qHOMB5-pTUvscuGHW5/view?usp=sharing
+
 > **Turn your KT sessions into smart chatbots. Instantly. In any language. With your voice.**
 
 [![Built with Groq](https://img.shields.io/badge/Built%20with-Groq-orange?style=flat-square)](https://groq.com)
@@ -408,8 +413,8 @@ git push origin feature/something-wild
 
 MIT License — do whatever you want with it. Build something cool.
 
----
 
+---
 ## 👤 Built By
 
 **AKX** — built at hackathon 2026 in one sleepless sprint.
